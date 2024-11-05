@@ -1,24 +1,39 @@
-import { BeforeInsert, BeforeUpdate, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
-import * as bcrypt from 'bcrypt';
+import { BeforeInsert, BeforeUpdate, Column, Entity, JoinTable, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToMany } from "typeorm";
+import { hashPassword } from '../utils/passwords.security';
+import { Roles } from "src/types";
+import { Role } from "./roles.entity";
 
 @Entity()
 export class User {
+  @ManyToMany(() => Role, (role) => role.users)
+  @JoinTable()
+  roles: Role[];
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
+  @Column()
   username: string;
 
-  @Column({ select: false })
+  @Column()
   password: string;
 
-  @Column({ unique: true })
+  @Column()
   email: string;
 
-  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ default: false })
+  isActive: boolean;
+
+  @Column({
+    type: 'set',
+    enum: Roles,
+    default: [Roles.USER]
+  })
+  role: Roles[];
+
+  @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ default: () => 'CURRENT_TIMESTAMP' })
+  @UpdateDateColumn()
   updatedAt: Date;
 
   @BeforeInsert()
@@ -32,7 +47,10 @@ export class User {
   }
 
   @BeforeInsert()
+  @BeforeUpdate()
   async hashPassword() {
-    this.password = await bcrypt.hash(this.password, 10);
+    if (this.password) {
+      this.password = await hashPassword(this.password);
+    }
   }
 }

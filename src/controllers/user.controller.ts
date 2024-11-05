@@ -88,6 +88,7 @@ export class UserController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   @Roles(Role.ADMIN)
   @UseGuards(RolesGuard)
   deleteUser(@Param('id') id: number) {
@@ -95,6 +96,9 @@ export class UserController {
   }
 
   @Delete()
+//   @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard)
+//   @UseGuards(RolesGuard)
   deleteAllUsers() {
     return this.usersService.deleteAll();
   }

@@ -7,7 +7,10 @@ import { comparePasswords } from 'src/utils/passwords.security';
 
 @Injectable()
 export class AuthService {
-    constructor(private readonly usersService: UsersService, private readonly jwtService: JwtService) {}
+    constructor(private readonly usersService: UsersService, private readonly jwtService: JwtService) {
+        // Clean up invalid tokens periodically (every hour)
+        setInterval(() => this.cleanupInvalidatedTokens(), 3600000);
+    }
 
     async login(loginDto: LoginResponseDto) {
         console.log('Login attempt with:', loginDto);
@@ -46,19 +49,44 @@ export class AuthService {
         };
     }
 
-    private invalidatedTokens: Set<string> = new Set();
+    private invalidatedTokens: Map<string, number> = new Map(); // Store token with expiry timestamp
 
     async logout(token: string) {
-        // Extract the token from "Bearer token"
-        const actualToken = token.split(' ')[1];
-        
-        // Add the token to invalidated tokens set
-        this.invalidatedTokens.add(actualToken);
-        
-        return { message: 'Logout successful' };
+        try {
+            if (!token) {
+                throw new UnauthorizedException('No token provided');
+            }
+
+            // Extract the token from "Bearer token"
+            const actualToken = token.replace('Bearer ', '');
+
+            // Verify the token is valid before invalidating
+            const decoded = await this.jwtService.verify(actualToken);
+
+            // Store token with expiration timestamp
+            const expiryTimestamp = decoded.exp * 1000; // Convert to milliseconds
+            this.invalidatedTokens.set(actualToken, expiryTimestamp);
+
+            return { 
+                success: true,
+                message: 'Logout successful' 
+            };
+        } catch (error) {
+            throw new UnauthorizedException('Invalid token');
+        }
     }
 
-    isTokenInvalid(token: string): boolean {
+    // Method to check if a token is invalidated (blacklisted)
+    isTokenInvalidated(token: string): boolean {
         return this.invalidatedTokens.has(token);
+    }
+
+    private cleanupInvalidatedTokens() {
+        const now = Date.now();
+        for (const [token, expiry] of this.invalidatedTokens.entries()) {
+            if (expiry < now) {
+                this.invalidatedTokens.delete(token);
+            }
+        }
     }
 }

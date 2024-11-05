@@ -7,5 +7,12 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function comparePasswords(plainText: string, hashed: string): Promise<boolean> {
-  return bcrypt.compare(plainText, hashed);
+   
+    try {
+        const result = await bcrypt.compare(plainText, hashed);
+        return result;
+    } catch (error) {
+        console.error('Password comparison error:', error);
+        return false;
+    }
 }

@@ -6,6 +6,7 @@ import { RolesService } from './roles.service';
 import { CreateUserDto } from 'src/dto/create-user.dto';
 import { Role } from 'src/entities/roles.entity';
 import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -24,14 +25,21 @@ export class UsersService {
     return this.usersRepository.findOneBy({ username });
   }
 
+  //   find me by email
   async findByEmail(email: string) {
-    return this.usersRepository.findOneBy({ email });
+    return this.usersRepository.findOne({ where: { email } });
+  }
+
+  async deleteAll() {
+    return this.usersRepository.delete({});
   }
 
   async create(createUserDto: CreateUserDto) {
-    // Omit role (not roles) from DTO to create base user
     const { roles, ...userData } = createUserDto;
-    const user = this.usersRepository.create(userData);
+    
+    const user = this.usersRepository.create({
+      ...userData,
+    });
     
     return this.usersRepository.save(user);
   }

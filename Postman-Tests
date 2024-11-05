@@ -1,0 +1,13 @@
+pm.test("Save auth token", function () {
+    var jsonData = pm.response.json();
+    
+    // Log the response to debug
+    console.log(jsonData);
+    
+    // Assuming your token is in response.data.token
+    // Modify this line according to your actual response structure
+    var token = jsonData.data.token;
+    
+    // Save it to Postman environment
+    pm.environment.set("token", token);
+}); 

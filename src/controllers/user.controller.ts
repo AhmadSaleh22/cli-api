@@ -65,6 +65,37 @@ export class UserController {
         }
       });
     }
+    else if (createUserDto.roles) {
+      // Check for duplicate roles
+      const uniqueRoles = new Set(createUserDto.roles);
+      if (uniqueRoles.size !== createUserDto.roles.length) {
+        throw new BadRequestException({
+          message: 'Duplicate roles are not allowed',
+          details: {
+            roles: 'Each role can only be assigned once'
+          }
+        });
+      }
+
+      // Check if all roles are valid
+      const validRoles = Object.values(Role);
+      const invalidRoles = createUserDto.roles.filter(role => !validRoles.includes(role));
+      if (invalidRoles.length > 0) {
+        throw new BadRequestException({
+          message: 'Invalid roles provided',
+          details: {
+            roles: `Invalid roles: ${invalidRoles.join(', ')}. Valid roles are: ${validRoles.join(', ')}`
+          }
+        });
+      }
+      
+      // Check if roles array is empty
+      if (createUserDto.roles.length === 0) {
+        throw new BadRequestException({
+          message: 'Roles are required',
+        });
+      }
+    }
     //check if a user exists with the same email or username
     const userExists = await this.usersService.findByUsername(createUserDto.username) || await this.usersService.findByEmail(createUserDto.email);
     if (userExists) {
